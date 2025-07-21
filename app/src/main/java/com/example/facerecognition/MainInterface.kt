@@ -29,15 +29,16 @@ interface MainPresenterInterface {
     var challengeList: MutableList<String>
     var hasCapturePhoto: Boolean
     var hasSavedToGallery: Boolean
-    fun requiredVerification(face: Face, cameraController: LifecycleCameraController)
     fun generateChallenges(): String
+    var currentPhotoFile: File?
+    var cameraExecutor: ExecutorService
+
+    fun requiredVerification(face: Face, cameraController: LifecycleCameraController)
     fun capturePhoto(cameraController: LifecycleCameraController)
     fun createImageFile(): File
-    var currentPhotoFile: File?
     fun checkingChallengeVerification(face: Face)
     fun challengeVerification(face: Face)
     fun savedToGallery(photoFile: File)
-    var cameraExecutor: ExecutorService
     fun setupPermission(handler: String)
     fun launchPermission(handler: String)
     fun handleRequestPermissionLauncher(result: Map<String, Boolean>)

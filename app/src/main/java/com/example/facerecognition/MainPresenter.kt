@@ -59,9 +59,6 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
     override var hasCapturePhoto = true
     override var hasSavedToGallery = true
 
-//    init {
-//      cameraExecutor = Executors.newSingleThreadExecutor()
-//    }
 
     override fun setupPermission(handler: String) {
         val permissionCamera =
@@ -80,17 +77,16 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
             } else {
                 launchPermission(handler)
             }
-        } else{
-            if (permissionCamera == PackageManager.PERMISSION_GRANTED ){
+        } else {
+            if (permissionCamera == PackageManager.PERMISSION_GRANTED) {
                 when (handler) {
                     "default" -> startCamera()
                 }
-            } else{
+            } else {
                 launchPermission(handler)
             }
         }
     }
-
 
     override fun launchPermission(handler: String) {
         val permissionList = arrayOf(
@@ -100,12 +96,11 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
         )
 
         when (handler) {
-            "default" ->view.requestPermissionLauncher.launch(permissionList)
+            "default" -> view.requestPermissionLauncher.launch(permissionList)
         }
     }
 
     override fun handleRequestPermissionLauncher(result: Map<String, Boolean>) {
-        Log.d("PERMISSION", "PASSED : handleRequestPermissionLauncher")
         var successCount = 0
         result.entries.forEach {
             if (it.value) {
@@ -114,8 +109,6 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
         }
         if (successCount == (if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) 3 else 1)) {
             startCamera()
-            Log.d("PERMISSION", "PASSED : handleRequestPermissionLauncher SUCCESS")
-
         }
     }
 
@@ -201,22 +194,25 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
         if (phaseStartTime == 0L) phaseStartTime = System.currentTimeMillis()
         val elapsed = System.currentTimeMillis() - phaseStartTime
         view.binding.statusText.text =
-            "Hold position....${(1000 - elapsed).coerceAtLeast(0) / 1000}s"
+            "Hold position.... ${(1000 - elapsed).coerceAtLeast(0) / 1000}s"
 
         if (elapsed >= 1000) {
             if (isValid) {
                 if ((face.smilingProbability ?: 0F) > 0.7) isSmile = true
-                if ((face.leftEyeOpenProbability ?: 0F) > 0.2) isLeftEyeClosed = true
-                if ((face.rightEyeOpenProbability ?: 0F) > 0.2) isRightEyeClosed = true
+                if ((face.leftEyeOpenProbability ?: 0F) < 0.2) isLeftEyeClosed = true
+                if ((face.rightEyeOpenProbability ?: 0F) < 0.2) isRightEyeClosed = true
 
                 currentPhase = 2
                 phaseStartTime = 0L
                 challengePassed = false
                 challengeCurrent = generateChallenges()
                 capturePhoto(cameraController)
+
+            } else {
+                resetPhases()
+                view.binding.statusText.text = "Invalid face ❌"
             }
         }
-
     }
 
     override fun challengeVerification(face: Face) {
@@ -253,10 +249,12 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
     }
 
     override fun generateChallenges(): String {
+
         if (!isSmile) challengeList.add("smile")
         if (!isLeftEyeClosed) challengeList.add("closed left eye")
         if (!isRightEyeClosed) challengeList.add("closed right eye")
         if (!isRightEyeClosed && !isLeftEyeClosed) challengeList.add("blink")
+
 
         return challengeList.random()
     }
