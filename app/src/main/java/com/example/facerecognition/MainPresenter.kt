@@ -123,7 +123,6 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
 
     }
 
-
     override fun setupPermission(handler: String) {
         val permissionCamera =
             ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
