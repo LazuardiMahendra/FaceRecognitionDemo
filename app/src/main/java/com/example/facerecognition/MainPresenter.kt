@@ -119,6 +119,13 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
     }
 
     override fun parseVerifyFace(obj: JSONObject) {
+        val isIdentical = obj.getBoolean("isIdentical")
+        if (isIdentical) {
+            verificationSuccess()
+        } else{
+            verificationFailed()
+        }
+
         Log.d("Parse", "data verif: $obj")
 
     }
@@ -306,9 +313,8 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
             if (hasSavedToGallery) {
                 savedToGallery(currentPhotoFile!!)
                 hasSavedToGallery = false
-                getVerifyFace()
             }
-            verificationSuccess()
+            getVerifyFace()
         }
     }
 
@@ -425,6 +431,10 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
 
     private fun verificationSuccess() {
         view.binding.statusText.text = "Verifikasi BERHASIL ✅"
+    }
+
+    private fun verificationFailed() {
+        view.binding.statusText.text = "Verifikasi GAGAL ❌"
     }
 
 
