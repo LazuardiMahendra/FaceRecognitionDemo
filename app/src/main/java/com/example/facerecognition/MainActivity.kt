@@ -28,6 +28,8 @@ class MainActivity : AppCompatActivity(), MainActivityInterface {
         presenter?.setupPermission("default")
 
         presenter?.cameraExecutor = Executors.newSingleThreadExecutor()
+
+        presenter?.getDownloadImage()
     }
 
     override fun initListener() {

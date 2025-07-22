@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -27,8 +28,12 @@ import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import com.google.mlkit.vision.face.FaceLandmark
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
+import java.io.InputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -38,10 +43,17 @@ import java.util.concurrent.Executors
 class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPresenterInterface {
 
     private var view: MainActivityInterface = _view
+    private var model: MainInteractor? = null
 
     override var cameraExecutor: ExecutorService = Executors.newSingleThreadExecutor()
+
     private lateinit var faceDetector: FaceDetector
 
+    override lateinit var faceUri1: Uri
+    override lateinit var faceUri2: Uri
+
+    override var faceResult1: String = ""
+    override var faceResult2: String = ""
 
     override var currentPhase = 1
     override var phaseStartTime: Long = 0L
@@ -58,6 +70,58 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
 
     override var hasCapturePhoto = true
     override var hasSavedToGallery = true
+
+    init {
+        model = MainInteractor(this, context)
+
+    }
+
+    override fun parseDetectFace1(obj: JSONArray) {
+        Log.d("Parse", "data face 1: $obj")
+
+        val jsonObj = obj.getJSONObject(0)
+        faceResult1 = jsonObj.getString("faceId")
+    }
+
+    override fun getDownloadImage() {
+        val url =
+            "https://www.simpleimageresizer.com/_uploads/photos/78518124/Screenshot_2025-05-13_142018.png"
+        model?.downloadImage(url)
+    }
+
+    override fun parseDownloadImage(inputStream: InputStream) {
+        Log.d("face2", "$inputStream")
+        model?.detectFace2(inputStreamToByteArray(inputStream))
+    }
+
+    private fun inputStreamToByteArray(inputStream: InputStream): ByteArray {
+        val outputStream = ByteArrayOutputStream()
+        inputStream.use { input ->
+            outputStream.use { output ->
+                input.copyTo(output)
+            }
+        }
+        return outputStream.toByteArray()
+    }
+
+
+    override fun parseDetectFace2(obj: JSONArray) {
+        Log.d("Parse", "data face 2: $obj")
+        val jsonObj = obj.getJSONObject(0)
+        faceResult2 = jsonObj.getString("faceId")
+
+    }
+
+    override fun getVerifyFace() {
+        if (faceResult1 != "" && faceResult2 != "") {
+            model?.verifyFace(faceResult1, faceResult2)
+        }
+    }
+
+    override fun parseVerifyFace(obj: JSONObject) {
+        Log.d("Parse", "data verif: $obj")
+
+    }
 
 
     override fun setupPermission(handler: String) {
@@ -243,6 +307,7 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
             if (hasSavedToGallery) {
                 savedToGallery(currentPhotoFile!!)
                 hasSavedToGallery = false
+                getVerifyFace()
             }
             verificationSuccess()
         }
@@ -297,7 +362,6 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
         }
     }
 
-
     override fun capturePhoto(cameraController: LifecycleCameraController) {
         if (!hasCapturePhoto) return
 
@@ -315,6 +379,10 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
             cameraController.takePicture(outputOption, executor, object : OnImageSavedCallback {
                 override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
                     currentPhotoFile = outFile
+                    model?.detectFace1(Uri.fromFile(outFile))
+                    faceUri1 = Uri.fromFile(outFile)
+                    Log.d("faces", "Faces 1 : $faceUri1")
+
                     hasCapturePhoto = false
                 }
 
@@ -349,14 +417,12 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
         }
     }
 
-
     override fun createImageFile(): File {
         val timeStamp: String =
             SimpleDateFormat("yyMMdd_HHmmss_SSS", Locale.getDefault()).format(Date())
         val storageDir: File = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)!!
         return File.createTempFile("JPEG_${timeStamp}_", ".jpg", storageDir)
     }
-
 
     private fun verificationSuccess() {
         view.binding.statusText.text = "Verifikasi BERHASIL ✅"
