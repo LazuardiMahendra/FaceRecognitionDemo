@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/buttonRect">
+
+    <!--        <gradient-->
+    <!--                android:startColor="#00A667"-->
+    <!--                android:centerColor="#01B972"-->
+    <!--                android:endColor="#00CF7E"-->
+    <!--                android:angle="0" />-->
+
+    <solid android:color="@color/white" />
+
+    <padding
+        android:bottom="0dp"
+        android:left="0dp"
+        android:right="0dp"
+        android:top="0dp" />
+
+    <corners android:radius="8dp" />
+
+
+</shape>

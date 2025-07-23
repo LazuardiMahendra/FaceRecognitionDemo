@@ -5,13 +5,36 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    android:background="@color/white"
+    tools:context=".activity.MainActivity">
 
-    <androidx.camera.view.PreviewView
-        android:id="@+id/previewView"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/previewViewContainer"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:layout_marginTop="60dp"
+        android:background="@drawable/background_rounded"
+        android:clipToOutline="true"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/statusText">
+
+        <androidx.camera.view.PreviewView
+            android:id="@+id/previewView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <TextView
+        android:id="@+id/titleTxt"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="40dp"
+        android:text="Face Verify"
+        android:textColor="@color/black"
+        android:textSize="26sp"
+        android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -20,15 +43,35 @@
         android:id="@+id/statusText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="40dp"
-        android:background="#008000"
         android:padding="8dp"
-        android:text="Initializing..."
-        android:textColor="#FFFFFF"
-        android:textSize="26sp"
+        android:text="Hold your head position"
+        android:textSize="20sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/previewView" />
+        app:layout_constraintTop_toBottomOf="@id/titleTxt" />
 
+    <TextView
+        android:id="@+id/timeTxt"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/statusText"
+        tools:text="3" />
+
+<!--    <com.tuyenmonkey.mkloader.MKLoader-->
+<!--        android:id="@+id/getLoadingIcon"-->
+<!--        android:layout_width="20dp"-->
+<!--        android:layout_height="20dp"-->
+<!--        android:elevation="3dp"-->
+<!--        app:mk_type="LineSpinner"-->
+<!--        app:mk_color="@color/black"-->
+<!--        app:layout_constraintTop_toTopOf="@id/getLoadingView"-->
+<!--        app:layout_constraintBottom_toBottomOf="@id/getLoadingView"-->
+<!--        app:layout_constraintLeft_toLeftOf="@id/getLoadingView"-->
+<!--        app:layout_constraintRight_toRightOf="@id/getLoadingView"-->
+<!--        android:visibility="invisible"/>-->
 
 </androidx.constraintlayout.widget.ConstraintLayout>

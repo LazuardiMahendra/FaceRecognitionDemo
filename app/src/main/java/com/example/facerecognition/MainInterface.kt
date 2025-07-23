@@ -17,11 +17,14 @@ interface MainActivityInterface {
     var requestPermissionLauncher: ActivityResultLauncher<Array<String>>
 
     fun initListener()
+    fun dialogAlert()
+
+    fun showSnackBar(error: String)
+    fun startGetLoading()
+    fun stopGetLoading()
 }
 
 interface MainPresenterInterface {
-    fun startCamera()
-    fun resetPhases()
     var currentPhase: Int
     var phaseStartTime: Long
     var challengePassed: Boolean
@@ -31,37 +34,39 @@ interface MainPresenterInterface {
     var challengeCurrent: String
     var challengeList: MutableList<String>
     var hasCapturePhoto: Boolean
-    var hasSavedToGallery: Boolean
-    fun generateChallenges(): String
     var currentPhotoFile: File?
     var cameraExecutor: ExecutorService
+    var faceUri1: Uri
+    var faceUri2: Uri
+    var faceResult1: String
+    var faceResult2: String
 
+    fun startCamera()
+    fun resetPhases()
+    fun showSnackBar(error: String)
+    fun stopGetLoading()
+    fun generateChallenges(): String
     fun parseDetectFace1(obj: JSONArray)
     fun parseDetectFace2(obj: JSONArray)
     fun parseDownloadImage(inputStream: InputStream)
     fun parseVerifyFace(obj: JSONObject)
 
-
     fun requiredVerification(face: Face, cameraController: LifecycleCameraController)
     fun capturePhoto(cameraController: LifecycleCameraController)
     fun createImageFile(): File
     fun checkingChallengeVerification(face: Face)
-    fun challengeVerification(face: Face)
-    fun savedToGallery(photoFile: File)
+    fun challengeVerification(face: Face, cameraController: LifecycleCameraController)
     fun setupPermission(handler: String)
     fun launchPermission(handler: String)
     fun handleRequestPermissionLauncher(result: Map<String, Boolean>)
-    var faceUri1: Uri
-    var faceUri2: Uri
-
-
-    var faceResult1: String
-    var faceResult2: String
     fun getDownloadImage()
     fun getVerifyFace()
 }
 
 interface MainInteractorInterface {
+    fun showSnackBar(error: String)
+    fun stopGetLoading()
+
     fun parseDetectFace1(obj: JSONArray)
     fun parseDetectFace2(obj: JSONArray)
     fun parseDownloadImage(inputStream: InputStream)

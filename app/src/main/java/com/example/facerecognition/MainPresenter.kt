@@ -2,14 +2,17 @@ package com.example.facerecognition
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import android.view.View
 import android.widget.Toast
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
@@ -23,6 +26,7 @@ import androidx.collection.arraySetOf
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import com.example.facerecognition.activity.CompleteActivity
 import com.google.mlkit.vision.face.Face
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
@@ -69,64 +73,9 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
     override var currentPhotoFile: File? = null
 
     override var hasCapturePhoto = true
-    override var hasSavedToGallery = true
 
     init {
         model = MainInteractor(this, context)
-
-    }
-
-    override fun parseDetectFace1(obj: JSONArray) {
-        Log.d("Parse", "data face 1: $obj")
-
-        val jsonObj = obj.getJSONObject(0)
-        faceResult1 = jsonObj.getString("faceId")
-    }
-
-    override fun getDownloadImage() {
-        val url =
-            "https://www.simpleimageresizer.com/_uploads/photos/78518124/Screenshot_2025-05-13_142018.png"
-        model?.downloadImage(url)
-    }
-
-    override fun parseDownloadImage(inputStream: InputStream) {
-        Log.d("face2", "$inputStream")
-        model?.detectFace2(inputStreamToByteArray(inputStream))
-    }
-
-    private fun inputStreamToByteArray(inputStream: InputStream): ByteArray {
-        val outputStream = ByteArrayOutputStream()
-        inputStream.use { input ->
-            outputStream.use { output ->
-                input.copyTo(output)
-            }
-        }
-        return outputStream.toByteArray()
-    }
-
-
-    override fun parseDetectFace2(obj: JSONArray) {
-        Log.d("Parse", "data face 2: $obj")
-        val jsonObj = obj.getJSONObject(0)
-        faceResult2 = jsonObj.getString("faceId")
-
-    }
-
-    override fun getVerifyFace() {
-        if (faceResult1 != "" && faceResult2 != "") {
-            model?.verifyFace(faceResult1, faceResult2)
-        }
-    }
-
-    override fun parseVerifyFace(obj: JSONObject) {
-        val isIdentical = obj.getBoolean("isIdentical")
-        if (isIdentical) {
-            verificationSuccess()
-        } else{
-            verificationFailed()
-        }
-
-        Log.d("Parse", "data verif: $obj")
 
     }
 
@@ -182,6 +131,60 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
         }
     }
 
+    override fun getDownloadImage() {
+        val url =
+            "https://www.simpleimageresizer.com/_uploads/photos/811d21f2/WhatsApp_Image_2025-07-05_at_13.34.25_50.jpeg"
+        model?.downloadImage(url)
+    }
+
+    override fun getVerifyFace() {
+        model?.verifyFace(faceResult1, faceResult2)
+    }
+
+    override fun parseDetectFace1(obj: JSONArray) {
+        Log.d("Parse", "face 1: $obj")
+
+        val jsonObj = obj.getJSONObject(0)
+        faceResult1 = jsonObj.getString("faceId")
+
+        getDownloadImage()
+    }
+
+    override fun parseDownloadImage(inputStream: InputStream) {
+        model?.detectFace2(inputStreamToByteArray(inputStream))
+    }
+
+    private fun inputStreamToByteArray(inputStream: InputStream): ByteArray {
+        val outputStream = ByteArrayOutputStream()
+        inputStream.use { input ->
+            outputStream.use { output ->
+                input.copyTo(output)
+            }
+        }
+        return outputStream.toByteArray()
+    }
+
+    override fun parseDetectFace2(obj: JSONArray) {
+        Log.d("Parse", "face 2: $obj")
+
+        val jsonObj = obj.getJSONObject(0)
+        faceResult2 = jsonObj.getString("faceId")
+
+        getVerifyFace()
+    }
+
+    override fun parseVerifyFace(obj: JSONObject) {
+        val isIdentical = obj.getBoolean("isIdentical")
+        Log.d("Parse", "data verif: $obj")
+
+        if (isIdentical) {
+            val intent = Intent(context, CompleteActivity::class.java)
+            context.startActivity(intent)
+        } else {
+            view.dialogAlert()
+        }
+    }
+
     override fun startCamera() {
         val cameraController = LifecycleCameraController(context)
         val previewView: PreviewView = view.binding.previewView
@@ -190,6 +193,7 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
         cameraController.bindToLifecycle(context as LifecycleOwner)
 
         previewView.controller = cameraController
+        previewView.setOnTouchListener { _, _ -> true }
 
         val options = FaceDetectorOptions.Builder()
             .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
@@ -216,11 +220,10 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
                 val face = faces[0]
                 when (currentPhase) {
                     1 -> requiredVerification(face, cameraController)
-                    2 -> challengeVerification(face)
+                    2 -> challengeVerification(face, cameraController)
                 }
 
-            }
-        )
+            })
 
     }
 
@@ -236,8 +239,6 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
         isRightEyeClosed = false
 
         hasCapturePhoto = true
-        hasSavedToGallery = true
-
         challengeList.clear()
     }
 
@@ -263,8 +264,8 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
 
         if (phaseStartTime == 0L) phaseStartTime = System.currentTimeMillis()
         val elapsed = System.currentTimeMillis() - phaseStartTime
-        view.binding.statusText.text =
-            "Hold position.... ${(1000 - elapsed).coerceAtLeast(0) / 1000}s"
+        view.binding.statusText.text = "Hold your head position"
+        view.binding.timeTxt.text = "${(2000 - elapsed).coerceAtLeast(0) / 2000}s"
 
         if (elapsed >= 1000) {
             if (isValid) {
@@ -285,7 +286,7 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
         }
     }
 
-    override fun challengeVerification(face: Face) {
+    override fun challengeVerification(face: Face, cameraController: LifecycleCameraController) {
         val rotX = face.headEulerAngleX
         val rotY = face.headEulerAngleY
         val rotZ = face.headEulerAngleZ
@@ -307,19 +308,17 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
 
         if (!isValid) resetPhases()
 
-        view.binding.statusText.text = "Challenge $challengeCurrent"
+        view.binding.statusText.text = "Please $challengeCurrent"
+        view.binding.timeTxt.visibility = View.GONE
+
         checkingChallengeVerification(face)
-        if (challengePassed && challengeCurrent != null) {
-            if (hasSavedToGallery) {
-                savedToGallery(currentPhotoFile!!)
-                hasSavedToGallery = false
-            }
-            getVerifyFace()
+        if (challengePassed && currentPhotoFile != null) {
+            model?.detectFace1(Uri.fromFile(currentPhotoFile))
+            cameraController.unbind()
         }
     }
 
     override fun generateChallenges(): String {
-
         if (!isSmile) challengeList.add("smile")
         if (!isLeftEyeClosed) challengeList.add("closed left eye")
         if (!isRightEyeClosed) challengeList.add("closed right eye")
@@ -376,18 +375,14 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
         cameraController.bindToLifecycle(context as LifecycleOwner)
         previewView.controller = cameraController
 
-        val outFile = createImageFile()
-        val outputOption = ImageCapture.OutputFileOptions.Builder(outFile).build()
+        val outputFile = createImageFile()
+        val outputOption = ImageCapture.OutputFileOptions.Builder(outputFile).build()
         val executor = ContextCompat.getMainExecutor(context)
 
         if (hasCapturePhoto) {
             cameraController.takePicture(outputOption, executor, object : OnImageSavedCallback {
                 override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                    currentPhotoFile = outFile
-                    model?.detectFace1(Uri.fromFile(outFile))
-                    faceUri1 = Uri.fromFile(outFile)
-                    Log.d("faces", "Faces 1 : $faceUri1")
-
+                    currentPhotoFile = outputFile
                     hasCapturePhoto = false
                 }
 
@@ -398,43 +393,11 @@ class MainPresenter(_view: MainActivityInterface, val context: Context) : MainPr
         }
     }
 
-    override fun savedToGallery(photoFile: File) {
-        val fileName = photoFile.name
-        val contentValues = ContentValues().apply {
-            put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
-            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/GlobalExtreme")
-            }
-        }
-
-        val uri =
-            context.contentResolver.insert(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                contentValues
-            )
-        uri?.let {
-            context.contentResolver.openOutputStream(it).use { outputStream ->
-                FileInputStream(photoFile).use { inputStream ->
-                    inputStream.copyTo(outputStream!!)
-                }
-            }
-        }
-    }
-
     override fun createImageFile(): File {
         val timeStamp: String =
             SimpleDateFormat("yyMMdd_HHmmss_SSS", Locale.getDefault()).format(Date())
         val storageDir: File = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)!!
         return File.createTempFile("JPEG_${timeStamp}_", ".jpg", storageDir)
-    }
-
-    private fun verificationSuccess() {
-        view.binding.statusText.text = "Verifikasi BERHASIL ✅"
-    }
-
-    private fun verificationFailed() {
-        view.binding.statusText.text = "Verifikasi GAGAL ❌"
     }
 
 
